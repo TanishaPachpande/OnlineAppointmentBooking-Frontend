@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import './index.css';
 import './App.css';
 import Navbar from './components/Navbar';
@@ -11,6 +12,7 @@ import ReviewPage from './components/ReviewPage';
 // Auth
 import Login from './components/Login';
 import Register from './components/Register';
+import OAuth2Callback from "./components/OAuth2Callback";
 
 // Provider
 import ProviderSetup from './components/ProviderSetup';
@@ -36,6 +38,7 @@ const Unauthorized = () => (
 function App() {
   return (
     <Router>
+      <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
       <Navbar />
       <Routes>
         {/* Public */}
@@ -43,6 +46,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
+        <Route path="/oauth2/callback" element={<OAuth2Callback />} />
 
         {/* Provider Routes */}
         <Route path="/provider-setup" element={

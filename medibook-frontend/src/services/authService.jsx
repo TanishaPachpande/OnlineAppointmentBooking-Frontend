@@ -25,11 +25,19 @@ const authService = {
 },
 
   logout: () => {
-    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('userId');
   },
 
   getCurrentUser: () => {
-    return JSON.parse(localStorage.getItem('user'));
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role');
+    const userId = localStorage.getItem('userId');
+    if (token && role) {
+      return { token, role, userId };
+    }
+    return null;
   }
 };
 

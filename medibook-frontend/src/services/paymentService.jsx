@@ -3,10 +3,9 @@ import axios from 'axios';
 const PAYMENT_URL = 'http://localhost:8080/payments';
 
 const getAuthHeaders = () => {
-    const rawUser = localStorage.getItem('user');
-    const user = rawUser ? JSON.parse(rawUser) : null;
-    if (user && user.token) {
-        return { 'Authorization': `Bearer ${user.token}`, 'Content-Type': 'application/json' };
+    const token = localStorage.getItem('token');
+    if (token) {
+        return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
     }
     return { 'Content-Type': 'application/json' };
 };

@@ -4,11 +4,10 @@ const API_URL = 'http://localhost:8080/providers';
 const SCHEDULE_URL = 'http://localhost:8080/slots';
 
 const getAuthHeaders = () => {
-    const rawUser = localStorage.getItem('user');
-    const user = rawUser ? JSON.parse(rawUser) : null;
-    if (user && user.token) {
+    const token = localStorage.getItem('token');
+    if (token) {
         return {
-            'Authorization': `Bearer ${user.token}`,
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
         };
     }
