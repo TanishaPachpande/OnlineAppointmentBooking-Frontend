@@ -1,5 +1,4 @@
 import React from 'react';
-import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
 import { Link, useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
 
@@ -14,48 +13,48 @@ const Navbar = () => {
   };
 
   return (
-    <AppBar position="static" sx={{ backgroundColor: '#2c3e50' }}>
-      <Toolbar>
-        <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
-          MediBook
-        </Typography>
+    <nav className="navbar">
+      <div className="navbar-toolbar">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="navbar-brand">
+            <span>MediBook</span>
+          </div>
 
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button color="inherit" component={Link} to="/">Home</Button>
+          <div className="navbar-menu">
+            {/* Patient links */}
+            {user?.role === 'PATIENT' && (
+              <>
+                <Link to="/notifications" className="navbar-button">🔔 Alerts</Link>
+                <Link to="/dashboard" className="navbar-button">Find Doctors</Link>
+                <Link to="/appointments" className="navbar-button">My Appointments</Link>
+                <Link to="/records" className="navbar-button">Medical Records</Link>
+              </>
+            )}
 
-          {/* Patient links */}
-          {user?.role === 'PATIENT' && (
-            <>
-              <Button color="inherit" component={Link} to="/notifications">🔔 Notifications</Button>
-              <Button color="inherit" component={Link} to="/dashboard">Find Doctors</Button>
-              <Button color="inherit" component={Link} to="/appointments">My Appointments</Button>
-              <Button color="inherit" component={Link} to="/records">My Records</Button>
-            </>
-          )}
+            {/* Provider links */}
+            {user?.role === 'PROVIDER' && (
+              <>
+                <Link to="/notifications" className="navbar-button">🔔 Alerts</Link>
+                <Link to="/manage-slots" className="navbar-button">Manage Schedule</Link>
+                <Link to="/provider-appointments" className="navbar-button">Appointments</Link>
+                <Link to="/provider-records" className="navbar-button">Records</Link>
+              </>
+            )}
 
-          {/* Provider links */}
-          {user?.role === 'PROVIDER' && (
-            <>
-              <Button color="inherit" component={Link} to="/notifications">🔔 Notifications</Button>
-              <Button color="inherit" component={Link} to="/manage-slots">My Schedule</Button>
-              <Button color="inherit" component={Link} to="/provider-appointments">Appointments</Button>
-              <Button color="inherit" component={Link} to="/provider-records">Medical Records</Button>
-            </>
-          )}
-
-          {user ? (
-            <Button variant="contained" color="error" onClick={handleLogout} sx={{ ml: 2 }}>
-              Logout
-            </Button>
-          ) : (
-            <>
-              <Button color="inherit" component={Link} to="/login">Login</Button>
-              <Button variant="contained" color="primary" component={Link} to="/register">Register</Button>
-            </>
-          )}
-        </Box>
-      </Toolbar>
-    </AppBar>
+            {user ? (
+              <button className="navbar-button navbar-button-logout" onClick={handleLogout}>
+                Sign Out
+              </button>
+            ) : (
+              <>
+                <Link to="/login" className="navbar-button">Sign In</Link>
+                <Link to="/register" className="navbar-button" style={{ background: 'rgba(255,255,255,0.2)' }}>Join</Link>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </nav>
   );
 };
 

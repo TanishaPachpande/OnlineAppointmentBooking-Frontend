@@ -20,7 +20,6 @@ const MyMedicalRecords = () => {
     const fetchRecords = async () => {
         try {
             const data = await recordService.getRecordsByPatient(user.userId);
-            // Sort newest first
             const sorted = [...data].sort((a, b) => new Date(b.visitDate) - new Date(a.visitDate));
             setRecords(sorted);
         } catch (err) {
@@ -37,135 +36,124 @@ const MyMedicalRecords = () => {
         });
     };
 
-    const s = {
-        page: { padding: '30px', maxWidth: '900px', margin: '0 auto', fontFamily: 'Segoe UI, sans-serif' },
-        card: {
-            background: 'white', borderRadius: '10px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '16px', overflow: 'hidden'
-        },
-        header: {
-            padding: '18px 20px', display: 'flex', justifyContent: 'space-between',
-            alignItems: 'center', cursor: 'pointer', borderLeft: '4px solid #2c3e50'
-        },
-        expandBtn: {
-            background: 'none', border: '1px solid #ddd', borderRadius: '6px',
-            padding: '4px 12px', cursor: 'pointer', fontSize: '13px', color: '#555'
-        },
-        detailGrid: {
-            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px',
-            padding: '20px', borderTop: '1px solid #eee', backgroundColor: '#fafafa'
-        },
-        detailBlock: { display: 'flex', flexDirection: 'column', gap: '4px' },
-        detailLabel: { fontSize: '12px', fontWeight: '700', color: '#7f8c8d', textTransform: 'uppercase', letterSpacing: '0.5px' },
-        detailValue: { fontSize: '14px', color: '#2c3e50', lineHeight: '1.5' },
-        badge: (color) => ({
-            display: 'inline-block', padding: '3px 12px', borderRadius: '20px',
-            fontSize: '12px', fontWeight: '600', backgroundColor: color + '22', color: color
-        })
-    };
-
-    if (loading) return <div style={{ textAlign: 'center', marginTop: '60px' }}>Loading...</div>;
+    if (loading) return (
+        <div className="page-content">
+            <div className="loading-container">
+                <div className="spinner"></div>
+            </div>
+        </div>
+    );
 
     return (
-        <div style={s.page}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div className="page-content">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                 <div>
-                    <h2 style={{ color: '#2c3e50', margin: 0 }}>My Medical Records</h2>
-                    <p style={{ color: '#7f8c8d', margin: '4px 0 0 0', fontSize: '14px' }}>
-                        {records.length} record{records.length !== 1 ? 's' : ''} found
+                    <h2 style={{ margin: 0 }}>Medical Records</h2>
+                    <p style={{ color: '#666', margin: '8px 0 0', fontSize: '0.95rem' }}>
+                        {records.length} record{records.length !== 1 ? 's' : ''} on file
                     </p>
                 </div>
                 <button onClick={() => navigate('/appointments')}
-                    style={{ padding: '8px 18px', backgroundColor: '#2c3e50', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>
-                    ← Appointments
+                    className="btn btn-outline">
+                    ← Back to Appointments
                 </button>
             </div>
 
             {message && (
-                <div style={{
-                    padding: '12px 16px', borderRadius: '6px', marginBottom: '20px',
-                    backgroundColor: message.type === 'success' ? '#d4edda' : '#f8d7da',
-                    color: message.type === 'success' ? '#155724' : '#721c24',
-                    display: 'flex', justifyContent: 'space-between'
-                }}>
+                <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between' }}
+                     className={message.type === 'error' ? 'error-message' : 'success-message'}>
                     {message.text}
                     <button onClick={() => setMessage(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
                 </div>
             )}
 
             {records.length === 0 ? (
-                <div style={{ background: 'white', borderRadius: '10px', padding: '60px', textAlign: 'center', color: '#7f8c8d', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>📋</div>
-                    <p style={{ margin: 0, fontWeight: '600' }}>No medical records yet.</p>
-                    <p style={{ margin: '8px 0 0 0', fontSize: '14px' }}>Records will appear here after your doctor adds them post-appointment.</p>
+                <div className="empty-state">
+                    <div className="empty-icon">📋</div>
+                    <div className="empty-title">No Medical Records</div>
+                    <p className="empty-text">Your medical records will appear here after your doctor uploads them following an appointment.</p>
                 </div>
             ) : (
-                records.map(record => {
-                    const isOpen = expandedId === record.recordId;
-                    return (
-                        <div key={record.recordId} style={s.card}>
-                            <div style={s.header} onClick={() => setExpandedId(isOpen ? null : record.recordId)}>
-                                <div>
-                                    <div style={{ fontWeight: '700', color: '#2c3e50', fontSize: '15px' }}>
-                                        📅 {formatDate(record.visitDate)}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {records.map(record => {
+                        const isOpen = expandedId === record.recordId;
+                        return (
+                            <div key={record.recordId} className="card" style={{ cursor: 'pointer' }}>
+                                <div onClick={() => setExpandedId(isOpen ? null : record.recordId)}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                                        <div>
+                                            <h4 className="card-title" style={{ margin: '0 0 6px' }}>
+                                                📅 {formatDate(record.visitDate)}
+                                            </h4>
+                                            <p style={{ margin: 0, fontSize: '0.85rem', color: '#999' }}>
+                                                Record #{record.recordId} • Appointment #{record.appointmentId}
+                                            </p>
+                                        </div>
+                                        <span style={{ color: '#0066cc', fontWeight: '600', fontSize: '0.9rem' }}>
+                                            {isOpen ? '▲ Hide' : '▼ Show'} Details
+                                        </span>
                                     </div>
-                                    <div style={{ fontSize: '13px', color: '#7f8c8d', marginTop: '4px' }}>
-                                        Record #{record.recordId} &nbsp;·&nbsp; Appointment #{record.appointmentId}
-                                    </div>
-                                    <div style={{ marginTop: '6px' }}>
-                                        <span style={s.badge('#2980b9')}>🩺 {record.diagnosis?.slice(0, 60)}{record.diagnosis?.length > 60 ? '...' : ''}</span>
-                                    </div>
-                                </div>
-                                <button style={s.expandBtn}>{isOpen ? '▲ Hide' : '▼ View Details'}</button>
-                            </div>
 
-                            {isOpen && (
-                                <div style={s.detailGrid}>
-                                    <div style={{ ...s.detailBlock, gridColumn: 'span 2' }}>
-                                        <span style={s.detailLabel}>Diagnosis</span>
-                                        <span style={s.detailValue}>{record.diagnosis}</span>
-                                    </div>
-                                    <div style={{ ...s.detailBlock, gridColumn: 'span 2' }}>
-                                        <span style={s.detailLabel}>Prescription</span>
-                                        <span style={{ ...s.detailValue, whiteSpace: 'pre-wrap' }}>{record.prescription}</span>
-                                    </div>
-                                    {record.vitals && (
-                                        <div style={s.detailBlock}>
-                                            <span style={s.detailLabel}>Vitals</span>
-                                            <span style={s.detailValue}>{record.vitals}</span>
-                                        </div>
-                                    )}
-                                    {record.allergies && (
-                                        <div style={s.detailBlock}>
-                                            <span style={s.detailLabel}>Allergies</span>
-                                            <span style={{ ...s.detailValue, color: '#e74c3c' }}>{record.allergies}</span>
-                                        </div>
-                                    )}
-                                    {record.labTests && (
-                                        <div style={{ ...s.detailBlock, gridColumn: 'span 2' }}>
-                                            <span style={s.detailLabel}>Lab Tests</span>
-                                            <span style={s.detailValue}>{record.labTests}</span>
-                                        </div>
-                                    )}
-                                    {record.followUpNotes && (
-                                        <div style={{ ...s.detailBlock, gridColumn: 'span 2' }}>
-                                            <span style={s.detailLabel}>Follow-up Notes</span>
-                                            <span style={{ ...s.detailValue, color: '#27ae60' }}>{record.followUpNotes}</span>
-                                        </div>
-                                    )}
-                                    <div style={s.detailBlock}>
-                                        <span style={s.detailLabel}>Visit Date</span>
-                                        <span style={s.detailValue}>{formatDate(record.visitDate)}</span>
-                                    </div>
-                                    <div style={s.detailBlock}>
-                                        <span style={s.detailLabel}>Provider ID</span>
-                                        <span style={s.detailValue}>#{record.providerId}</span>
+                                    <div style={{
+                                        display: 'inline-block',
+                                        padding: '6px 12px',
+                                        backgroundColor: '#e6f0ff',
+                                        color: '#0066cc',
+                                        borderRadius: '20px',
+                                        fontSize: '0.85rem',
+                                        fontWeight: '600'
+                                    }}>
+                                        🩺 {record.diagnosis?.slice(0, 60)}{record.diagnosis?.length > 60 ? '...' : ''}
                                     </div>
                                 </div>
-                            )}
-                        </div>
-                    );
-                })
+
+                                {isOpen && (
+                                    <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #f0f0f0' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                            <div style={{ gridColumn: 'span 2' }}>
+                                                <p style={{ margin: '0 0 8px', fontSize: '0.85rem', fontWeight: '600', color: '#0066cc', textTransform: 'uppercase' }}>Diagnosis</p>
+                                                <p style={{ margin: 0, color: '#2c2c2c', lineHeight: '1.6' }}>{record.diagnosis}</p>
+                                            </div>
+
+                                            <div style={{ gridColumn: 'span 2' }}>
+                                                <p style={{ margin: '0 0 8px', fontSize: '0.85rem', fontWeight: '600', color: '#0066cc', textTransform: 'uppercase' }}>Prescription</p>
+                                                <p style={{ margin: 0, color: '#2c2c2c', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{record.prescription}</p>
+                                            </div>
+
+                                            {record.vitals && (
+                                                <div>
+                                                    <p style={{ margin: '0 0 8px', fontSize: '0.85rem', fontWeight: '600', color: '#00c853', textTransform: 'uppercase' }}>Vitals</p>
+                                                    <p style={{ margin: 0, color: '#2c2c2c', lineHeight: '1.6' }}>{record.vitals}</p>
+                                                </div>
+                                            )}
+
+                                            {record.allergies && (
+                                                <div>
+                                                    <p style={{ margin: '0 0 8px', fontSize: '0.85rem', fontWeight: '600', color: '#d32f2f', textTransform: 'uppercase' }}>Allergies</p>
+                                                    <p style={{ margin: 0, color: '#2c2c2c', lineHeight: '1.6' }}>{record.allergies}</p>
+                                                </div>
+                                            )}
+
+                                            {record.labTests && (
+                                                <div style={{ gridColumn: 'span 2' }}>
+                                                    <p style={{ margin: '0 0 8px', fontSize: '0.85rem', fontWeight: '600', color: '#0066cc', textTransform: 'uppercase' }}>Lab Tests</p>
+                                                    <p style={{ margin: 0, color: '#2c2c2c', lineHeight: '1.6' }}>{record.labTests}</p>
+                                                </div>
+                                            )}
+
+                                            {record.followUpNotes && (
+                                                <div style={{ gridColumn: 'span 2' }}>
+                                                    <p style={{ margin: '0 0 8px', fontSize: '0.85rem', fontWeight: '600', color: '#00c853', textTransform: 'uppercase' }}>Follow-up Notes</p>
+                                                    <p style={{ margin: 0, color: '#2c2c2c', lineHeight: '1.6' }}>{record.followUpNotes}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
             )}
         </div>
     );

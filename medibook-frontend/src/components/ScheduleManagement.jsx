@@ -134,6 +134,17 @@ const ScheduleManagement = () => {
     }
   };
 
+  const handleRefreshSlots = async () => {
+    if (!providerData?.providerId) return;
+    try {
+      const updated = await providerService.getSlotsByProvider(providerData.providerId);
+      setSlots(updated);
+      setMessage({ type: 'success', text: 'Slots refreshed!' });
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Failed to refresh slots.' });
+    }
+  };
+
   const handleDeleteSlot = async (slotId) => {
     if (!window.confirm("Are you sure you want to delete this slot?")) return;
     try {
@@ -399,7 +410,12 @@ const ScheduleManagement = () => {
 
           {/* My Slots Table */}
           <div style={s.card}>
-            <h3 style={{ marginTop: 0 }}>My Slots ({slots.length})</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <h3 style={{ marginTop: 0, marginBottom: 0 }}>My Slots ({slots.length})</h3>
+              <button style={{ ...s.btnGreen, fontSize: '13px', padding: '6px 14px' }} onClick={handleRefreshSlots}>
+                🔄 Refresh Slots
+              </button>
+            </div>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8f9fa', textAlign: 'left' }}>
@@ -409,19 +425,41 @@ const ScheduleManagement = () => {
                 </tr>
               </thead>
               <tbody>
-                {slots.map(slot => (
-                  <tr key={slot.slotId}>
-                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>
-                      {slot.date} | {slot.startTime} - {slot.endTime}
-                    </td>
-                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>
-                      {slot.isBooked ? '🔴 Booked' : '🟢 Available'}
-                    </td>
-                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>
-                      <button style={s.btnRed} onClick={() => handleDeleteSlot(slot.slotId)}>Delete</button>
-                    </td>
-                  </tr>
-                ))}
+                {slots.map(slot => {
+                  const statusLabel = slot.isBooked
+                    ? '🔴 Booked'
+                    : slot.isBlocked
+                    ? '🟡 Blocked'
+                    : '🟢 Available';
+                  return (
+                    <tr key={slot.slotId}>
+                      <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>
+                        {slot.date} | {slot.startTime} - {slot.endTime}
+                      </td>
+                      <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>
+                        {statusLabel}
+                      </td>
+                      <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>
+                        {!slot.isBooked && (
+                          <button
+                            style={{ ...s.btnBlock, marginRight: '6px' }}
+                            onClick={() => handleToggleBlock(slot.slotId, slot.isBlocked)}
+                          >
+                            {slot.isBlocked ? 'Unblock' : 'Block'}
+                          </button>
+                        )}
+                        {!slot.isBooked && (
+                          <button style={s.btnRed} onClick={() => handleDeleteSlot(slot.slotId)}>Delete</button>
+                        )}
+                        {slot.isBooked && (
+                          <span style={{ fontSize: '12px', color: '#888', fontStyle: 'italic' }}>
+                            Booked — cannot delete
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
