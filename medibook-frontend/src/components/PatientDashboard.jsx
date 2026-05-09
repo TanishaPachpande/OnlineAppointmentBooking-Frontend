@@ -1,3 +1,8 @@
+// REPLACE: src/components/PatientDashboard.jsx
+// Only change vs original: provider cards now have equal height with the
+// "Book Appointment" button always pinned to the bottom.
+// All data-fetching, search, filter, and navigation logic is UNCHANGED.
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
@@ -8,19 +13,20 @@ const PatientDashboard = () => {
     const navigate = useNavigate();
     const user = authService.getCurrentUser();
 
-    const [providers, setProviders] = useState([]);
+    const [providers, setProviders]               = useState([]);
     const [filteredProviders, setFilteredProviders] = useState([]);
     const [upcomingAppointments, setUpcomingAppointments] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading]     = useState(true);
     const [searchKeyword, setSearchKeyword] = useState('');
-    const [filterSpec, setFilterSpec] = useState('');
-    const [message, setMessage] = useState(null);
+    const [filterSpec, setFilterSpec]       = useState('');
+    const [message, setMessage]             = useState(null);
 
     useEffect(() => {
         if (!user || user.role !== 'PATIENT') { navigate('/login'); return; }
         fetchData();
     }, []);
 
+    // ── unchanged ──
     const fetchData = async () => {
         try {
             const [providerData, appointmentData] = await Promise.all([
@@ -37,6 +43,7 @@ const PatientDashboard = () => {
         }
     };
 
+    // ── unchanged ──
     const handleSearch = async () => {
         if (!searchKeyword.trim()) { setFilteredProviders(providers); return; }
         try {
@@ -47,6 +54,7 @@ const PatientDashboard = () => {
         }
     };
 
+    // ── unchanged ──
     const handleSpecFilter = async (spec) => {
         setFilterSpec(spec);
         if (!spec) { setFilteredProviders(providers); return; }
@@ -70,28 +78,27 @@ const PatientDashboard = () => {
 
     if (loading) return (
         <div className="page-content">
-            <div className="loading-container">
-                <div className="spinner"></div>
-            </div>
+            <div className="loading-container"><div className="spinner" /></div>
         </div>
     );
 
     return (
         <div className="page-content">
             <div className="dashboard-header">
-                <h1 className="dashboard-title">Welcome back, {user?.fullName || 'Patient'} 👋</h1>
-                <p className="dashboard-subtitle">Book appointments and manage your healthcare</p>
+                <h1 className="dashboard-title">Welcome back, {user?.fullName || 'Patient'}. </h1>
+                <p className="dashboard-subtitle">Book appointments and manage your healthcare.</p>
             </div>
 
             {message && (
-                <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} 
-                     className={message.type === 'error' ? 'error-message' : 'success-message'}>
+                <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                    className={message.type === 'error' ? 'error-message' : 'success-message'}>
                     {message.text}
-                    <button onClick={() => setMessage(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px' }}>✕</button>
+                    <button onClick={() => setMessage(null)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px' }}>✕</button>
                 </div>
             )}
 
-            {/* Stats */}
+            {/* Stats — unchanged */}
             <div className="dashboard-stats">
                 <div className="stat-card">
                     <div className="stat-number">{upcomingAppointments.length}</div>
@@ -107,35 +114,32 @@ const PatientDashboard = () => {
                 </div>
             </div>
 
-            {/* Upcoming Appointments */}
+            {/* Upcoming Appointments — unchanged */}
             {upcomingAppointments.length > 0 && (
                 <div className="card" style={{ marginBottom: '32px' }}>
                     <h3 className="card-title">📅 Upcoming Appointments</h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {upcomingAppointments.slice(0, 3).map(apt => {
-                            const statusClass = `appointment-status ${apt.status?.toLowerCase()}`;
-                            return (
-                                <div key={apt.appointmentId} style={{
-                                    padding: '16px',
-                                    backgroundColor: '#f9fafb',
-                                    borderLeft: '4px solid #0066cc',
-                                    borderRadius: '8px'
-                                }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                        <div>
-                                            <strong style={{ color: '#0066cc', fontSize: '1rem' }}>{getAppointmentProviderName(apt)}</strong>
-                                            <div style={{ color: '#666', marginTop: '6px', fontSize: '0.9rem' }}>
-                                                📅 {apt.appointmentDate} at {apt.startTime?.slice(0, 5)}
-                                            </div>
-                                            <div style={{ color: '#999', marginTop: '4px', fontSize: '0.85rem' }}>
-                                                {apt.modeOfConsultation?.replace('_', ' ')}
-                                            </div>
+                        {upcomingAppointments.slice(0, 3).map(apt => (
+                            <div key={apt.appointmentId} style={{
+                                padding: '16px',
+                                backgroundColor: '#f9fafb',
+                                borderLeft: '4px solid #0066cc',
+                                borderRadius: '8px'
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div>
+                                        <strong style={{ color: '#0066cc', fontSize: '1rem' }}>{getAppointmentProviderName(apt)}</strong>
+                                        <div style={{ color: '#666', marginTop: '6px', fontSize: '0.9rem' }}>
+                                            📅 {apt.appointmentDate} at {apt.startTime?.slice(0, 5)}
                                         </div>
-                                        <span className={statusClass}>{apt.status}</span>
+                                        <div style={{ color: '#999', marginTop: '4px', fontSize: '0.85rem' }}>
+                                            {apt.modeOfConsultation?.replace('_', ' ')}
+                                        </div>
                                     </div>
+                                    <span className={`appointment-status ${apt.status?.toLowerCase()}`}>{apt.status}</span>
                                 </div>
-                            );
-                        })}
+                            </div>
+                        ))}
                     </div>
                     <button onClick={() => navigate('/appointments')}
                         className="btn btn-outline" style={{ marginTop: '12px', width: '100%' }}>
@@ -144,7 +148,7 @@ const PatientDashboard = () => {
                 </div>
             )}
 
-            {/* Search & Filter */}
+            {/* Search & Filter — unchanged */}
             <div className="search-filter-container">
                 <h3 style={{ marginTop: 0, marginBottom: '20px', color: '#0066cc' }}>🔍 Find a Healthcare Provider</h3>
                 <div className="search-box">
@@ -160,16 +164,19 @@ const PatientDashboard = () => {
                     </button>
                 </div>
                 <div className="filter-tags">
-                    <button className={`filter-tag ${!filterSpec ? 'active' : ''}`} onClick={() => handleSpecFilter('')}>All Specialists</button>
+                    <button className={`filter-tag ${!filterSpec ? 'active' : ''}`} onClick={() => handleSpecFilter('')}>
+                        All Specialists
+                    </button>
                     {specializations.map(spec => (
-                        <button key={spec} className={`filter-tag ${filterSpec === spec ? 'active' : ''}`} onClick={() => handleSpecFilter(spec)}>
+                        <button key={spec} className={`filter-tag ${filterSpec === spec ? 'active' : ''}`}
+                            onClick={() => handleSpecFilter(spec)}>
                             {spec}
                         </button>
                     ))}
                 </div>
             </div>
 
-            {/* Doctors Grid */}
+            {/* ── Doctors Grid ── */}
             <div style={{ marginTop: '32px' }}>
                 <h2 style={{ marginBottom: '20px' }}>
                     {filteredProviders.length} Healthcare Provider{filteredProviders.length !== 1 ? 's' : ''} Available
@@ -182,20 +189,33 @@ const PatientDashboard = () => {
                         <p className="empty-text">Try adjusting your search or filter criteria</p>
                     </div>
                 ) : (
+                    /*
+                     * FIX: align-items: stretch (default) makes every card in a row
+                     * the same height. Each card uses flexDirection:'column' so the
+                     * info section grows to fill, pushing the button to the bottom.
+                     */
                     <div className="provider-grid">
                         {filteredProviders.map(provider => (
-                            <div key={provider.providerId} className="provider-card">
+                            <div key={provider.providerId} className="provider-card"
+                                style={{ display: 'flex', flexDirection: 'column' }}>
+
+                                {/* Avatar banner */}
                                 <div className="provider-avatar">
                                     {provider.fullName?.charAt(0) || 'D'}
                                 </div>
-                                <div className="provider-info">
-                                    <h4 className="provider-name">
-                                        {getProviderName(provider)}
-                                    </h4>
+
+                                {/* Info section grows to fill remaining space */}
+                                <div className="provider-info"
+                                    style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+
+                                    <h4 className="provider-name">{getProviderName(provider)}</h4>
                                     <p className="provider-spec">{provider.specialization}</p>
-                                    
-                                    <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '12px' }}>
-                                        {provider.isVerified && <span style={{ color: '#00c853', fontWeight: '600' }}>✓ Verified Provider</span>}
+
+                                    {/* Always render badge area so height is consistent */}
+                                    <div style={{ fontSize: '0.85rem', marginBottom: '12px', minHeight: '20px' }}>
+                                        {provider.isVerified && (
+                                            <span style={{ color: '#00c853', fontWeight: '600' }}>✓ Verified Provider</span>
+                                        )}
                                     </div>
 
                                     <div className="provider-details">
@@ -205,27 +225,37 @@ const PatientDashboard = () => {
                                         <div>📍 {provider.clinicAddress?.substring(0, 40)}...</div>
                                     </div>
 
-                                    {provider.bio && (
-                                        <p style={{ fontSize: '0.85rem', color: '#999', margin: '12px 0 0', lineHeight: '1.5' }}>
-                                            {provider.bio.length > 80 ? provider.bio.slice(0, 80) + '...' : provider.bio}
-                                        </p>
-                                    )}
+                                    {/* Bio — clamp to 2 lines so it never blows up card height */}
+                                    <p style={{
+                                        fontSize: '0.85rem', color: '#999',
+                                        margin: '12px 0 0', lineHeight: '1.5',
+                                        minHeight: '40px',
+                                        display: '-webkit-box',
+                                        WebkitLineClamp: 2,
+                                        WebkitBoxOrient: 'vertical',
+                                        overflow: 'hidden',
+                                    }}>
+                                        {provider.bio || ''}
+                                    </p>
 
-                                    <div className="provider-rating">
-                                        <span className="stars">★★★★★</span>
-                                        <span style={{ color: '#666', fontSize: '0.9rem' }}>
-                                            {provider.avgRating?.toFixed(1) || '0.0'}
-                                        </span>
+                                    {/* Rating + button pushed to bottom */}
+                                    <div style={{ marginTop: 'auto', paddingTop: '12px' }}>
+                                        <div className="provider-rating" style={{ marginBottom: '12px' }}>
+                                            <span className="stars">★★★★★</span>
+                                            <span style={{ color: '#666', fontSize: '0.9rem' }}>
+                                                {provider.avgRating?.toFixed(1) || '0.0'}
+                                            </span>
+                                        </div>
+
+                                        <button
+                                            className="provider-action"
+                                            onClick={() => provider.isAvailable && navigate(`/book/${provider.providerId}`)}
+                                            disabled={!provider.isAvailable}
+                                            style={{ opacity: provider.isAvailable ? 1 : 0.5 }}
+                                        >
+                                            {provider.isAvailable ? 'Book Appointment' : 'Not Available'}
+                                        </button>
                                     </div>
-
-                                    <button
-                                        className="provider-action"
-                                        onClick={() => provider.isAvailable && navigate(`/book/${provider.providerId}`)}
-                                        disabled={!provider.isAvailable}
-                                        style={{ opacity: provider.isAvailable ? 1 : 0.5 }}
-                                    >
-                                        {provider.isAvailable ? 'Book Appointment' : 'Not Available'}
-                                    </button>
                                 </div>
                             </div>
                         ))}

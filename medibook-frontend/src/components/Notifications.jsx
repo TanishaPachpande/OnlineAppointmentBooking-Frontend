@@ -13,17 +13,38 @@ const Notifications = () => {
 
     useEffect(() => {
         if (!user) { navigate('/login'); return; }
+        if (!user.userId) {
+            setMessage({ type: 'error', text: 'Session error: user ID not found. Please log out and log in again.' });
+            setLoading(false);
+            return;
+        }
         fetchNotifications();
     }, []);
 
     const fetchNotifications = async () => {
         try {
+            setLoading(true);
             const data = await notificationService.getNotificationsByUser(user.userId);
             // Newest first
             const sorted = [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             setNotifications(sorted);
         } catch (err) {
-            setMessage({ type: 'error', text: 'Failed to load notifications.' });
+            const status = err?.response?.status;
+            const backendMsg = err?.response?.data?.message || err?.response?.data?.error;
+            if (status === 401 || status === 403) {
+                setMessage({ type: 'error', text: 'Session expired. Please log in again.' });
+                setTimeout(() => navigate('/login'), 2000);
+            } else if (status === 404) {
+                // 404 means no notifications found – treat as empty list
+                setNotifications([]);
+            } else {
+                setMessage({
+                    type: 'error',
+                    text: backendMsg
+                        ? `Failed to load notifications: ${backendMsg}`
+                        : 'Failed to load notifications. Please try again later.'
+                });
+            }
         } finally {
             setLoading(false);
         }
@@ -52,7 +73,7 @@ const Notifications = () => {
         }
     };
 
-    if (loading) return <div style={{ textAlign: 'center', marginTop: '60px' }}>Loading...</div>;
+    if (loading) return <div style={{ textAlign: 'center', marginTop: '60px', fontSize: '16px', color: '#555' }}>Loading notifications…</div>;
 
     return (
         <div style={s.page}>
@@ -63,16 +84,26 @@ const Notifications = () => {
                         {notifications.length} notification{notifications.length !== 1 ? 's' : ''}
                     </p>
                 </div>
+                <button
+                    onClick={fetchNotifications}
+                    style={{
+                        padding: '8px 16px', borderRadius: '6px', border: '1px solid #ccc',
+                        background: 'white', cursor: 'pointer', fontSize: '13px', color: '#555'
+                    }}
+                >
+                    🔄 Refresh
+                </button>
             </div>
 
             {message && (
                 <div style={{
                     padding: '12px 16px', borderRadius: '6px', marginBottom: '20px',
-                    backgroundColor: '#f8d7da', color: '#721c24',
-                    display: 'flex', justifyContent: 'space-between'
+                    backgroundColor: message.type === 'error' ? '#f8d7da' : '#d4edda',
+                    color: message.type === 'error' ? '#721c24' : '#155724',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center'
                 }}>
-                    {message.text}
-                    <button onClick={() => setMessage(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+                    <span>{message.text}</span>
+                    <button onClick={() => setMessage(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px' }}>✕</button>
                 </div>
             )}
 
@@ -81,7 +112,7 @@ const Notifications = () => {
                     <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔔</div>
                     <p style={{ margin: 0, fontWeight: '600' }}>No notifications yet.</p>
                     <p style={{ fontSize: '14px', margin: '6px 0 0 0' }}>
-                        You'll receive email notifications when you book, cancel or reschedule appointments.
+                        You'll receive notifications here for appointments, payments and reviews.
                     </p>
                 </div>
             ) : (

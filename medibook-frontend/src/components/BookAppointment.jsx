@@ -39,13 +39,20 @@ const BookAppointment = () => {
             );
             const slots = await response.json();
 
-            const today = new Date().toISOString().split('T')[0];
+            const now = new Date();
+            const today = now.toISOString().split('T')[0];
+            // Current time as "HH:MM:SS" string for direct comparison with slot.startTime
+            const currentTime = now.toTimeString().slice(0, 8);
+
             const available = Array.isArray(slots)
-                ? slots.filter(s =>
-                    s.isBooked === false &&
-                    s.isBlocked === false &&
-                    s.date >= today
-                )
+                ? slots.filter(s => {
+                    if (s.isBooked !== false || s.isBlocked !== false) return false;
+                    // Exclude fully past dates
+                    if (s.date < today) return false;
+                    // For today: also exclude slots whose start time has already passed
+                    if (s.date === today && s.startTime <= currentTime) return false;
+                    return true;
+                })
                 : [];
 
             available.sort((a, b) => {
@@ -76,7 +83,7 @@ const BookAppointment = () => {
 
         setSubmitting(true);
         try {
-            await appointmentService.bookAppointment({
+            const booked = await appointmentService.bookAppointment({
                 patientId: user.userId,
                 providerId: parseInt(providerId),
                 slotId: selectedSlot.slotId,
@@ -84,8 +91,11 @@ const BookAppointment = () => {
                 modeOfConsultation: formData.modeOfConsultation,
                 notes: formData.notes
             });
-            setMessage({ type: 'success', text: 'Appointment booked successfully! Redirecting...' });
-            setTimeout(() => navigate('/appointments'), 1800);
+
+            // ── CHANGED: redirect to payment immediately after booking ──
+            setMessage({ type: 'success', text: 'Appointment booked! Redirecting to payment...' });
+            setTimeout(() => navigate(`/payment/${booked.appointmentId}`), 1500);
+
         } catch (err) {
             setMessage({ type: 'error', text: err.response?.data?.message || 'Booking failed. Please try again.' });
             setSubmitting(false);
@@ -113,7 +123,7 @@ const BookAppointment = () => {
             <h2 style={{ marginBottom: '20px' }}>Book an Appointment</h2>
 
             {message && (
-                <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between' }} 
+                <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between' }}
                      className={message.type === 'error' ? 'error-message' : 'success-message'}>
                     {message.text}
                     <button onClick={() => setMessage(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
@@ -161,6 +171,16 @@ const BookAppointment = () => {
                                 </p>
                             </div>
                         )}
+
+                        {/* Payment info notice */}
+                        <div className="card" style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', marginTop: '12px' }}>
+                            <p style={{ margin: 0, fontSize: '13px', color: '#92400e', fontWeight: '600' }}>
+                                💳 Payment required at booking
+                            </p>
+                            <p style={{ margin: '6px 0 0', fontSize: '12px', color: '#a16207' }}>
+                                After confirming your appointment, you will be redirected to complete the payment. Refund is issued automatically if cancelled.
+                            </p>
+                        </div>
                     </div>
                 )}
 
@@ -260,7 +280,7 @@ const BookAppointment = () => {
                             disabled={submitting || !selectedSlot}
                             style={{ opacity: (!selectedSlot || submitting) ? 0.6 : 1 }}
                         >
-                            {submitting ? 'Booking...' : selectedSlot ? '✓ Confirm Appointment' : 'Select a Time Slot'}
+                            {submitting ? 'Booking...' : selectedSlot ? '✓ Confirm & Proceed to Payment' : 'Select a Time Slot'}
                         </button>
                     </div>
                 </form>

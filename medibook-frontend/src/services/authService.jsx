@@ -28,14 +28,16 @@ const authService = {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     localStorage.removeItem('userId');
+    localStorage.removeItem('fullName');
   },
 
   getCurrentUser: () => {
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
     const userId = localStorage.getItem('userId');
+    const fullName = localStorage.getItem('fullName');
     if (token && role) {
-      return { token, role, userId };
+      return { token, role, userId, fullName };
     }
     return null;
   }

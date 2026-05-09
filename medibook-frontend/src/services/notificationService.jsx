@@ -15,7 +15,27 @@ const getAuthHeaders = () => {
 
 const notificationService = {
     getNotificationsByUser: async (userId) => {
-        const response = await axios.get(`${NOTIFICATION_URL}/user/${userId}`, { headers: getAuthHeaders() });
+        if (!userId) throw new Error('userId is required');
+        const response = await axios.get(`${NOTIFICATION_URL}/user/${userId}`, {
+            headers: getAuthHeaders()
+        });
+        return response.data;
+    },
+
+    markAsRead: async (notificationId) => {
+        const response = await axios.put(
+            `${NOTIFICATION_URL}/${notificationId}/read`,
+            {},
+            { headers: getAuthHeaders() }
+        );
+        return response.data;
+    },
+
+    deleteNotification: async (notificationId) => {
+        const response = await axios.delete(
+            `${NOTIFICATION_URL}/${notificationId}`,
+            { headers: getAuthHeaders() }
+        );
         return response.data;
     }
 };

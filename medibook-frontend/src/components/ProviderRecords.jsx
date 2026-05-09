@@ -34,11 +34,16 @@ const ProviderRecords = () => {
             const pData = await providerService.getProviderByUserId(user.userId);
             setProviderData(pData);
 
+            // Don't try to load records if not yet approved
+            if (pData.verificationStatus !== 'APPROVED') {
+                setLoading(false);
+                return;
+            }
+
             const allApts = await appointmentService.getByProvider(pData.providerId);
             const completed = allApts.filter(a => a.status === 'COMPLETED');
             setCompletedAppointments(completed);
 
-            // For each completed appointment, try to fetch existing record
             const recordMap = {};
             await Promise.all(completed.map(async (apt) => {
                 try {
@@ -50,7 +55,12 @@ const ProviderRecords = () => {
             }));
             setExistingRecords(recordMap);
         } catch (err) {
-            setMessage({ type: 'error', text: 'Failed to load data.' });
+            // 404 = no profile yet, not an error worth showing
+            if (err?.response?.status === 404 || !err?.response) {
+                setProviderData(null);
+            } else {
+                setMessage({ type: 'error', text: 'Failed to load data.' });
+            }
         } finally {
             setLoading(false);
         }
@@ -135,6 +145,42 @@ const ProviderRecords = () => {
     };
 
     if (loading) return <div style={{ textAlign: 'center', marginTop: '60px' }}>Loading...</div>;
+
+    // Profile doesn't exist or not yet approved
+    if (!providerData || providerData.verificationStatus !== 'APPROVED') {
+        const isPending  = providerData?.verificationStatus === 'PENDING';
+        const isRejected = providerData?.verificationStatus === 'REJECTED';
+        return (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh', padding: 24 }}>
+                <div style={{
+                    background: 'white', borderRadius: 16, padding: '48px 40px',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)', maxWidth: 480, textAlign: 'center'
+                }}>
+                    <div style={{ fontSize: 56, marginBottom: 16 }}>
+                        {isPending ? '⏳' : isRejected ? '❌' : '📋'}
+                    </div>
+                    <h3 style={{ color: '#0f172a', marginBottom: 10 }}>
+                        {isPending  ? 'Account Pending Approval'
+                         : isRejected ? 'Account Not Approved'
+                         : 'Complete Your Profile First'}
+                    </h3>
+                    <p style={{ color: '#64748b', fontSize: 14, lineHeight: 1.7, marginBottom: 24 }}>
+                        {isPending
+                            ? 'Your application is under review. Records will be available once the admin approves your account.'
+                            : isRejected
+                            ? 'Your application was rejected. Please re-submit your profile with the correct documents.'
+                            : 'You need to complete your provider registration before accessing records.'}
+                    </p>
+                    <button onClick={() => navigate('/provider-setup')} style={{
+                        padding: '10px 24px', background: '#1e40af', color: 'white',
+                        border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer', fontSize: 14
+                    }}>
+                        {isPending ? 'View Application Status' : 'Go to Profile Setup'}
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div style={s.page}>

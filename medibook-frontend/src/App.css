@@ -291,12 +291,14 @@
   font-size: 2rem;
   margin: 0 0 8px;
   font-weight: 700;
+  color:#ffffff
 }
 
 .dashboard-subtitle {
   font-size: 1rem;
   opacity: 0.9;
   margin: 0;
+  color:#ffffff
 }
 
 .dashboard-stats {
@@ -342,6 +344,8 @@
   box-shadow: var(--shadow-md);
   transition: all 0.3s ease;
   border: 1px solid #f0f0f0;
+  display: flex;
+  flex-direction: column;
 }
 
 .provider-card:hover {
@@ -363,6 +367,9 @@
 
 .provider-info {
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .provider-name {
@@ -383,6 +390,7 @@
   color: #999;
   line-height: 1.6;
   margin-bottom: 16px;
+  flex: 1;
 }
 
 .provider-rating {
@@ -390,6 +398,7 @@
   align-items: center;
   gap: 4px;
   margin-bottom: 16px;
+  margin-top: auto;
 }
 
 .stars {
@@ -850,4 +859,124 @@
 .btn-sm {
   padding: 0.4rem 0.85rem;
   font-size: 0.8rem;
+}
+
+/* ── Guest / LoginPromptModal animation ─────────────────────────────────── */
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.btn-auth-primary {
+  display: block;
+  width: 100%;
+  padding: 13px;
+  background: linear-gradient(135deg, #0a66c2, #0088ff);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: opacity 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 14px rgba(10, 102, 194, 0.35);
+  font-family: inherit;
+}
+.btn-auth-primary:hover:not(:disabled) {
+  box-shadow: 0 6px 18px rgba(10, 102, 194, 0.45);
+}
+.btn-auth-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-auth-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px;
+  background: white;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #374151;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  font-family: inherit;
+}
+.btn-auth-google:hover {
+  border-color: #0a66c2;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* ── OTP inline button (Register) ───────────────────────────────── */
+.btn-otp {
+  padding: 0 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  transition: opacity 0.2s;
+  font-family: inherit;
+  min-width: 80px;
+}
+.btn-otp:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Improved slot buttons ───────────────────────────────────────── */
+.slot-button {
+  padding: 10px 14px;
+  border: 2px solid #e2e8f0;
+  background: white;
+  color: #374151;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+.slot-button:hover:not(:disabled) {
+  border-color: #0a66c2;
+  background: #eff6ff;
+  color: #0a66c2;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(10, 102, 194, 0.15);
+}
+.slot-button.selected {
+  border-color: #0a66c2;
+  background: linear-gradient(135deg, #0a66c2, #0088ff);
+  color: white;
+  box-shadow: 0 4px 12px rgba(10, 102, 194, 0.35);
+}
+.slot-button:disabled {
+  background: #f8fafc;
+  color: #cbd5e0;
+  cursor: not-allowed;
+  opacity: 0.6;
+  border-color: #f1f5f9;
+}
+
+/* ── Appointment grid — ensure horizontal layout ────────────────── */
+.appointment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
 }

@@ -8,7 +8,7 @@ const Navbar = () => {
 
   const handleLogout = () => {
     authService.logout();
-    navigate('/login');
+    navigate('/browse');   // after logout go to public browse page
     window.location.reload();
   };
 
@@ -17,10 +17,20 @@ const Navbar = () => {
       <div className="navbar-toolbar">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div className="navbar-brand">
-            <span>MediBook</span>
+            {/* Brand always links to the public browse page */}
+            <Link to="/browse" style={{ color: 'inherit', textDecoration: 'none' }}>
+              <span>MediBook</span>
+            </Link>
           </div>
 
           <div className="navbar-menu">
+            {/* ── Guest / Not logged-in links ── */}
+            {!user && (
+              <>
+                <Link to="/browse" className="navbar-button">🏥 Browse Doctors</Link>
+              </>
+            )}
+
             {/* Patient links */}
             {user?.role === 'PATIENT' && (
               <>
@@ -41,6 +51,14 @@ const Navbar = () => {
               </>
             )}
 
+            {/* Admin links */}
+            {user?.role === 'ADMIN' && (
+              <>
+                <Link to="/admin" className="navbar-button">📊 Dashboard</Link>
+              </>
+            )}
+
+            {/* Auth buttons */}
             {user ? (
               <button className="navbar-button navbar-button-logout" onClick={handleLogout}>
                 Sign Out
@@ -48,7 +66,13 @@ const Navbar = () => {
             ) : (
               <>
                 <Link to="/login" className="navbar-button">Sign In</Link>
-                <Link to="/register" className="navbar-button" style={{ background: 'rgba(255,255,255,0.2)' }}>Join</Link>
+                <Link
+                  to="/register"
+                  className="navbar-button"
+                  style={{ background: 'rgba(255,255,255,0.2)' }}
+                >
+                  Join
+                </Link>
               </>
             )}
           </div>
