@@ -29,7 +29,7 @@ const ProviderSetup = () => {
             });
             const status = res.data?.verificationStatus;
             if (status === 'APPROVED') {
-                navigate('/manage-slots'); // already approved — skip setup
+                navigate('/manage-slots');
             } else if (status === 'PENDING') {
                 setProfileStatus('PENDING');
             } else if (status === 'REJECTED') {
@@ -39,7 +39,7 @@ const ProviderSetup = () => {
                 setProfileStatus('NONE');
             }
         } catch {
-            setProfileStatus('NONE'); // 404 = no profile yet, show the form
+            setProfileStatus('NONE');
         }
     };
 
@@ -53,13 +53,16 @@ const ProviderSetup = () => {
         clinicName: '',
         clinicAddress: '',
         verificationDocumentUrl: '',
+        profilePhotoUrl: '',          // ── NEW ──
     });
 
-    const [uploading,  setUploading]  = useState(false);
-    const [submitted,  setSubmitted]  = useState(false);
-    const [error,      setError]      = useState('');
+    const [uploading,      setUploading]      = useState(false);
+    const [uploadingPhoto, setUploadingPhoto] = useState(false); // ── NEW ──
+    const [photoPreview,   setPhotoPreview]   = useState(null);  // ── NEW ──
+    const [submitted,      setSubmitted]      = useState(false);
+    const [error,          setError]          = useState('');
 
-    // ── Upload to Cloudinary ──────────────────────────────────────────────────
+    // ── Upload verification document to Cloudinary ────────────────────────────
     const handleDocChange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -94,6 +97,50 @@ const ProviderSetup = () => {
         }
     };
 
+    // ── NEW: Upload profile photo to Cloudinary ───────────────────────────────
+    const handlePhotoChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const allowedPhoto = ['image/jpeg','image/jpg','image/png','image/webp'];
+        if (!allowedPhoto.includes(file.type)) {
+            setError('Profile photo must be JPG, PNG, or WEBP.'); return;
+        }
+        if (file.size > 3 * 1024 * 1024) {
+            setError('Profile photo must be under 3 MB.'); return;
+        }
+        setError('');
+
+        // Show local preview immediately
+        const reader = new FileReader();
+        reader.onload = ev => setPhotoPreview(ev.target.result);
+        reader.readAsDataURL(file);
+
+        setUploadingPhoto(true);
+        try {
+            const data = new FormData();
+            data.append('file', file);
+            data.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+            const res  = await fetch(
+                `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+                { method: 'POST', body: data }
+            );
+            const json = await res.json();
+            if (json.secure_url) {
+                setFormData(prev => ({ ...prev, profilePhotoUrl: json.secure_url }));
+            } else {
+                setError(`Photo upload failed: ${json.error?.message || JSON.stringify(json)}`);
+                setPhotoPreview(null);
+            }
+        } catch (err) {
+            setError(`Photo upload failed: ${err.message}`);
+            setPhotoPreview(null);
+        } finally {
+            setUploadingPhoto(false);
+        }
+    };
+    // ─────────────────────────────────────────────────────────────────────────
+
     // ── Submit registration ───────────────────────────────────────────────────
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -116,7 +163,6 @@ const ProviderSetup = () => {
     // SCREENS
     // ─────────────────────────────────────────────────────────────────────────
 
-    // Loading spinner
     if (profileStatus === 'loading') {
         return (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
@@ -128,7 +174,6 @@ const ProviderSetup = () => {
         );
     }
 
-    // Just submitted — show pending screen
     if (submitted || profileStatus === 'PENDING') {
         return (
             <div style={s.container}>
@@ -156,7 +201,6 @@ const ProviderSetup = () => {
         );
     }
 
-    // Admin rejected — show reason + allow resubmission
     if (profileStatus === 'REJECTED') {
         return (
             <div style={s.container}>
@@ -213,6 +257,61 @@ const ProviderSetup = () => {
                 )}
 
                 <form onSubmit={handleSubmit}>
+
+                    {/* ── NEW: Profile Photo Upload ── */}
+                    <div style={{
+                        ...s.group,
+                        background: '#f8fafc',
+                        border: '1.5px dashed #cbd5e1',
+                        borderRadius: 12,
+                        padding: '20px 18px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 20,
+                    }}>
+                        {/* Avatar preview */}
+                        <div style={{
+                            width: 90, height: 90, borderRadius: '50%',
+                            background: photoPreview ? 'transparent' : '#e2e8f0',
+                            border: '3px solid #cbd5e1',
+                            overflow: 'hidden',
+                            flexShrink: 0,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 32, color: '#94a3b8',
+                        }}>
+                            {photoPreview
+                                ? <img src={photoPreview} alt="Preview"
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                : '👤'
+                            }
+                        </div>
+
+                        <div style={{ flex: 1 }}>
+                            <label style={{ ...s.label, color: '#334155', marginBottom: 6 }}>
+                                📸 Profile Photo <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>(optional)</span>
+                            </label>
+                            <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 10px' }}>
+                                JPG, PNG, or WEBP — max 3 MB. Shown to patients when browsing doctors.
+                            </p>
+                            <input
+                                type="file"
+                                accept=".jpg,.jpeg,.png,.webp"
+                                onChange={handlePhotoChange}
+                                style={{ fontSize: 13 }}
+                            />
+                            {uploadingPhoto && (
+                                <p style={{ color: '#0369a1', fontSize: 13, marginTop: 6 }}>
+                                    ⏳ Uploading photo…
+                                </p>
+                            )}
+                            {formData.profilePhotoUrl && !uploadingPhoto && (
+                                <p style={{ color: '#16a34a', fontSize: 13, marginTop: 6 }}>
+                                    ✅ Photo uploaded successfully.
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                    {/* ── END: Profile Photo ── */}
 
                     <div style={s.group}>
                         <label style={s.label}>Full Name</label>
@@ -288,14 +387,14 @@ const ProviderSetup = () => {
                         )}
                     </div>
 
-                    <button type="submit" disabled={uploading} style={{
+                    <button type="submit" disabled={uploading || uploadingPhoto} style={{
                         width: '100%', padding: 12,
-                        backgroundColor: uploading ? '#94a3b8' : '#1e40af',
+                        backgroundColor: (uploading || uploadingPhoto) ? '#94a3b8' : '#1e40af',
                         color: 'white', border: 'none', borderRadius: 6,
-                        cursor: uploading ? 'not-allowed' : 'pointer',
+                        cursor: (uploading || uploadingPhoto) ? 'not-allowed' : 'pointer',
                         fontWeight: 'bold', marginTop: 10, fontSize: 15
                     }}>
-                        {uploading ? 'Uploading…' : '🚀 Submit for Admin Review'}
+                        {uploading || uploadingPhoto ? 'Uploading…' : '🚀 Submit for Admin Review'}
                     </button>
                 </form>
             </div>

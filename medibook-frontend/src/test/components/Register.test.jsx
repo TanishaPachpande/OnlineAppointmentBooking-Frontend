@@ -134,15 +134,15 @@ describe('Register Component', () => {
         expect.stringContaining('OTP verified')
       );
     });
-    // OTP input should be hidden after verification
     expect(screen.queryByPlaceholderText('6-digit OTP')).not.toBeInTheDocument();
   });
 
   it('prevents form submission if OTP is not sent', async () => {
-    renderRegister();
-    // The submit button is disabled until OTP is sent.
-    // Submit the form element directly to bypass the disabled check.
-    const form = document.querySelector('form.auth-form');
+    // FIX: Use the render container to get the <form> element and submit it directly.
+    // The submit button is disabled (React attribute), so fireEvent.click won't trigger submit.
+    // fireEvent.submit on the form element bypasses the disabled button and calls handleSubmit.
+    const { container } = renderRegister();
+    const form = container.querySelector('form');
     fireEvent.submit(form);
 
     await waitFor(() => {
@@ -214,7 +214,6 @@ describe('Register Component', () => {
     fireEvent.click(screen.getByRole('button', { name: /verify/i }));
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith(expect.stringContaining('OTP verified')));
 
-    // select PROVIDER role
     fireEvent.change(screen.getByRole('combobox'), {
       target: { name: 'role', value: 'PROVIDER' },
     });

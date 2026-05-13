@@ -41,6 +41,21 @@ describe('authService', () => {
       await authService.register({ fullName: 'B', email: 'b@b.com', password: 'p', phone: '0', role: 'PATIENT' });
       expect(localStorage.getItem('user')).toBeNull();
     });
+
+    it('propagates errors from axios', async () => {
+      axios.post.mockRejectedValueOnce(new Error('Network Error'));
+      await expect(authService.register({ email: 'x@x.com' })).rejects.toThrow('Network Error');
+    });
+
+    it('stores full user object including userId and role', async () => {
+      axios.post.mockResolvedValueOnce({
+        data: { token: 'tok', userId: '42', role: 'PROVIDER', fullName: 'Dr. X' },
+      });
+      await authService.register({ email: 'doc@test.com' });
+      const stored = JSON.parse(localStorage.getItem('user'));
+      expect(stored.userId).toBe('42');
+      expect(stored.role).toBe('PROVIDER');
+    });
   });
 
   describe('login', () => {
@@ -58,6 +73,18 @@ describe('authService', () => {
       expect(result.token).toBe('login_tok');
       expect(JSON.parse(localStorage.getItem('user')).token).toBe('login_tok');
     });
+
+    it('does not store user when login returns no token', async () => {
+      axios.post.mockResolvedValueOnce({ data: {} });
+      await authService.login({ email: 'x@x.com', password: 'p' });
+      expect(localStorage.getItem('user')).toBeNull();
+    });
+
+    it('propagates errors from axios', async () => {
+      axios.post.mockRejectedValueOnce({ response: { status: 401 } });
+      await expect(authService.login({ email: 'bad@x.com', password: 'wrong' }))
+        .rejects.toMatchObject({ response: { status: 401 } });
+    });
   });
 
   describe('logout', () => {
@@ -73,6 +100,10 @@ describe('authService', () => {
       expect(localStorage.getItem('role')).toBeNull();
       expect(localStorage.getItem('userId')).toBeNull();
       expect(localStorage.getItem('fullName')).toBeNull();
+    });
+
+    it('does not throw when localStorage is already empty', () => {
+      expect(() => authService.logout()).not.toThrow();
     });
   });
 
@@ -104,6 +135,16 @@ describe('authService', () => {
 
     it('returns null when localStorage is empty', () => {
       expect(authService.getCurrentUser()).toBeNull();
+    });
+
+    it('returns correct role for PROVIDER', () => {
+      localStorage.setItem('token', 'p_tok');
+      localStorage.setItem('role', 'PROVIDER');
+      localStorage.setItem('userId', '5');
+      localStorage.setItem('fullName', 'Dr. Jane');
+      const user = authService.getCurrentUser();
+      expect(user.role).toBe('PROVIDER');
+      expect(user.fullName).toBe('Dr. Jane');
     });
   });
 });

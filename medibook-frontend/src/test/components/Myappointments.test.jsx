@@ -91,10 +91,11 @@ describe('MyAppointments Component', () => {
 
   it('renders appointment cards for all appointments', async () => {
     renderComponent();
+    // Cards use "#101" format (not "Appointment #101")
     await waitFor(() => {
-      expect(screen.getByText('Appointment #101')).toBeInTheDocument();
-      expect(screen.getByText('Appointment #102')).toBeInTheDocument();
-      expect(screen.getByText('Appointment #103')).toBeInTheDocument();
+      expect(screen.getByText('#101')).toBeInTheDocument();
+      expect(screen.getByText('#102')).toBeInTheDocument();
+      expect(screen.getByText('#103')).toBeInTheDocument();
     });
   });
 
@@ -108,6 +109,7 @@ describe('MyAppointments Component', () => {
   it('shows filter tabs: ALL, SCHEDULED, COMPLETED, CANCELLED', async () => {
     renderComponent();
     await waitFor(() => {
+      // Filter buttons use "All (3)", "Scheduled (1)" etc.
       expect(screen.getByText(/All \(3\)/i)).toBeInTheDocument();
       expect(screen.getByText(/Scheduled \(1\)/i)).toBeInTheDocument();
       expect(screen.getByText(/Completed \(1\)/i)).toBeInTheDocument();
@@ -115,25 +117,25 @@ describe('MyAppointments Component', () => {
     });
   });
 
-  it('filters to only SCHEDULED appointments when SCHEDULED tab is clicked', async () => {
+  it('filters to only SCHEDULED appointments when Scheduled tab is clicked', async () => {
     renderComponent();
     await waitFor(() => screen.getByText(/Scheduled \(1\)/i));
 
     fireEvent.click(screen.getByText(/Scheduled \(1\)/i));
 
-    expect(screen.getByText('Appointment #101')).toBeInTheDocument();
-    expect(screen.queryByText('Appointment #102')).not.toBeInTheDocument();
-    expect(screen.queryByText('Appointment #103')).not.toBeInTheDocument();
+    expect(screen.getByText('#101')).toBeInTheDocument();
+    expect(screen.queryByText('#102')).not.toBeInTheDocument();
+    expect(screen.queryByText('#103')).not.toBeInTheDocument();
   });
 
-  it('filters to only COMPLETED appointments when COMPLETED tab is clicked', async () => {
+  it('filters to only COMPLETED appointments when Completed tab is clicked', async () => {
     renderComponent();
     await waitFor(() => screen.getByText(/Completed \(1\)/i));
 
     fireEvent.click(screen.getByText(/Completed \(1\)/i));
 
-    expect(screen.getByText('Appointment #102')).toBeInTheDocument();
-    expect(screen.queryByText('Appointment #101')).not.toBeInTheDocument();
+    expect(screen.getByText('#102')).toBeInTheDocument();
+    expect(screen.queryByText('#101')).not.toBeInTheDocument();
   });
 
   it('shows Pay Now button for unpaid SCHEDULED appointment', async () => {
@@ -146,15 +148,17 @@ describe('MyAppointments Component', () => {
   it('shows Reschedule and Cancel buttons for SCHEDULED appointment', async () => {
     renderComponent();
     await waitFor(() => {
-      expect(screen.getByText('Reschedule')).toBeInTheDocument();
-      expect(screen.getByText('Cancel')).toBeInTheDocument();
+      // Component renders "🔄 Reschedule" and "✕ Cancel"
+      expect(screen.getByText('🔄 Reschedule')).toBeInTheDocument();
+      expect(screen.getByText('✕ Cancel')).toBeInTheDocument();
     });
   });
 
-  it('shows Rate button for COMPLETED appointment', async () => {
+  it('shows Rate & Review button for COMPLETED appointment', async () => {
     renderComponent();
     await waitFor(() => {
-      expect(screen.getByText('⭐ Rate')).toBeInTheDocument();
+      // Component renders "⭐ Rate & Review"
+      expect(screen.getByText('⭐ Rate & Review')).toBeInTheDocument();
     });
   });
 
@@ -182,23 +186,27 @@ describe('MyAppointments Component', () => {
     });
   });
 
-  it('opens reschedule modal when Reschedule is clicked', async () => {
+  it('opens reschedule modal when Reschedule button is clicked', async () => {
     renderComponent();
-    await waitFor(() => screen.getByText('Reschedule'));
-    fireEvent.click(screen.getByText('Reschedule'));
-    expect(screen.getByText('Reschedule Appointment')).toBeInTheDocument();
+    // Wait for component to load, then click the 🔄 Reschedule button
+    await waitFor(() => screen.getByText('🔄 Reschedule'));
+    fireEvent.click(screen.getByText('🔄 Reschedule'));
+    // Modal title includes "🔄 Reschedule Appointment"
+    await waitFor(() => {
+      expect(screen.getByText('🔄 Reschedule Appointment')).toBeInTheDocument();
+    });
   });
 
   it('closes reschedule modal when Cancel button inside modal is clicked', async () => {
     renderComponent();
-    await waitFor(() => screen.getByText('Reschedule'));
-    fireEvent.click(screen.getByText('Reschedule'));
-    expect(screen.getByText('Reschedule Appointment')).toBeInTheDocument();
+    await waitFor(() => screen.getByText('🔄 Reschedule'));
+    fireEvent.click(screen.getByText('🔄 Reschedule'));
+    await waitFor(() => screen.getByText('🔄 Reschedule Appointment'));
 
-    // Click the Cancel button inside the modal (not the appointment cancel)
+    // The modal Cancel button is the last "Cancel" on screen
     const cancelBtns = screen.getAllByText('Cancel');
-    fireEvent.click(cancelBtns[cancelBtns.length - 1]); // last Cancel is the modal one
-    expect(screen.queryByText('Reschedule Appointment')).not.toBeInTheDocument();
+    fireEvent.click(cancelBtns[cancelBtns.length - 1]);
+    expect(screen.queryByText('🔄 Reschedule Appointment')).not.toBeInTheDocument();
   });
 
   it('navigates to payment page when Pay Now is clicked', async () => {
@@ -208,10 +216,10 @@ describe('MyAppointments Component', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/payment/101');
   });
 
-  it('navigates to review page when Rate is clicked', async () => {
+  it('navigates to review page when Rate & Review is clicked', async () => {
     renderComponent();
-    await waitFor(() => screen.getByText('⭐ Rate'));
-    fireEvent.click(screen.getByText('⭐ Rate'));
+    await waitFor(() => screen.getByText('⭐ Rate & Review'));
+    fireEvent.click(screen.getByText('⭐ Rate & Review'));
     expect(mockNavigate).toHaveBeenCalledWith('/review/102/10');
   });
 

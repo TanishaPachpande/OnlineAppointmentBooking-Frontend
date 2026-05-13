@@ -23,6 +23,17 @@ const renderLogin = () =>
     </MemoryRouter>
   );
 
+// Helper: fill and submit the login form using real placeholder text
+const fillAndSubmit = (emailVal, passwordVal) => {
+  fireEvent.change(screen.getByPlaceholderText('you@example.com'), {
+    target: { name: 'email', value: emailVal },
+  });
+  fireEvent.change(screen.getByPlaceholderText('Enter your password'), {
+    target: { name: 'password', value: passwordVal },
+  });
+  fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+};
+
 describe('Login Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -32,19 +43,22 @@ describe('Login Component', () => {
 
   it('renders the login form with email and password fields', () => {
     renderLogin();
-    expect(screen.getByPlaceholderText('Enter your email')).toBeInTheDocument();
+    // FIX: email placeholder is "you@example.com", not "Enter your email"
+    expect(screen.getByPlaceholderText('you@example.com')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Enter your password')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
   });
 
-  it('renders the "Welcome Back" heading', () => {
+  it('renders the "Sign In" heading', () => {
     renderLogin();
-    expect(screen.getByText('Welcome Back')).toBeInTheDocument();
+    // FIX: heading is "Sign In" (left panel says "Welcome to MediBook", not "Welcome Back")
+    expect(screen.getByRole('heading', { name: /sign in/i })).toBeInTheDocument();
   });
 
   it('renders a link to the register page', () => {
     renderLogin();
-    expect(screen.getByText(/sign up/i)).toBeInTheDocument();
+    // FIX: link text is "Create one free", not "sign up"
+    expect(screen.getByText(/create one free/i)).toBeInTheDocument();
   });
 
   it('renders "Continue as Guest" link', () => {
@@ -54,7 +68,7 @@ describe('Login Component', () => {
 
   it('updates email and password fields on input', () => {
     renderLogin();
-    const emailInput = screen.getByPlaceholderText('Enter your email');
+    const emailInput = screen.getByPlaceholderText('you@example.com');
     const passwordInput = screen.getByPlaceholderText('Enter your password');
 
     fireEvent.change(emailInput, { target: { name: 'email', value: 'test@example.com' } });
@@ -70,13 +84,7 @@ describe('Login Component', () => {
     });
 
     renderLogin();
-    fireEvent.change(screen.getByPlaceholderText('Enter your email'), {
-      target: { name: 'email', value: 'john@example.com' },
-    });
-    fireEvent.change(screen.getByPlaceholderText('Enter your password'), {
-      target: { name: 'password', value: 'secret' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    fillAndSubmit('john@example.com', 'secret');
 
     await waitFor(() => {
       expect(localStorage.getItem('token')).toBe('abc123');
@@ -92,32 +100,52 @@ describe('Login Component', () => {
     });
 
     renderLogin();
-    fireEvent.change(screen.getByPlaceholderText('Enter your email'), {
-      target: { name: 'email', value: 'admin@example.com' },
-    });
-    fireEvent.change(screen.getByPlaceholderText('Enter your password'), {
-      target: { name: 'password', value: 'adminpass' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    fillAndSubmit('admin@example.com', 'adminpass');
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/admin');
     });
   });
 
-  it('navigates to /provider-setup for PROVIDER role', async () => {
+  it('navigates PROVIDER to /provider-setup when no provider profile exists yet', async () => {
+    // FIX: PROVIDER login makes a 2nd GET call to check provider status.
+    // When that throws (no profile), component navigates to /provider-setup.
     axios.post.mockResolvedValueOnce({
       data: { token: 'tok', userId: '3', role: 'PROVIDER', fullName: 'Dr. Smith' },
     });
+    axios.get.mockRejectedValueOnce(new Error('Not Found'));
 
     renderLogin();
-    fireEvent.change(screen.getByPlaceholderText('Enter your email'), {
-      target: { name: 'email', value: 'dr@example.com' },
+    fillAndSubmit('dr@example.com', 'pass');
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/provider-setup');
     });
-    fireEvent.change(screen.getByPlaceholderText('Enter your password'), {
-      target: { name: 'password', value: 'pass' },
+  });
+
+  it('navigates PROVIDER to /manage-slots when provider is APPROVED', async () => {
+    axios.post.mockResolvedValueOnce({
+      data: { token: 'tok', userId: '3', role: 'PROVIDER', fullName: 'Dr. Smith' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    // 2nd call: GET /providers/user/:id returns APPROVED
+    axios.get.mockResolvedValueOnce({ data: { verificationStatus: 'APPROVED' } });
+
+    renderLogin();
+    fillAndSubmit('dr@example.com', 'pass');
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/manage-slots');
+    });
+  });
+
+  it('navigates PROVIDER to /provider-setup when provider status is PENDING', async () => {
+    axios.post.mockResolvedValueOnce({
+      data: { token: 'tok', userId: '3', role: 'PROVIDER', fullName: 'Dr. Smith' },
+    });
+    axios.get.mockResolvedValueOnce({ data: { verificationStatus: 'PENDING' } });
+
+    renderLogin();
+    fillAndSubmit('dr@example.com', 'pass');
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/provider-setup');
@@ -130,13 +158,7 @@ describe('Login Component', () => {
     });
 
     renderLogin();
-    fireEvent.change(screen.getByPlaceholderText('Enter your email'), {
-      target: { name: 'email', value: 'bad@example.com' },
-    });
-    fireEvent.change(screen.getByPlaceholderText('Enter your password'), {
-      target: { name: 'password', value: 'wrong' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    fillAndSubmit('bad@example.com', 'wrong');
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('Invalid credentials');
@@ -147,13 +169,7 @@ describe('Login Component', () => {
     axios.post.mockRejectedValueOnce(new Error('Network error'));
 
     renderLogin();
-    fireEvent.change(screen.getByPlaceholderText('Enter your email'), {
-      target: { name: 'email', value: 'x@x.com' },
-    });
-    fireEvent.change(screen.getByPlaceholderText('Enter your password'), {
-      target: { name: 'password', value: 'x' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    fillAndSubmit('x@x.com', 'x');
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('Login failed. Please try again.');
@@ -165,15 +181,11 @@ describe('Login Component', () => {
     axios.post.mockReturnValueOnce(new Promise((r) => { resolve = r; }));
 
     renderLogin();
-    fireEvent.change(screen.getByPlaceholderText('Enter your email'), {
-      target: { name: 'email', value: 'test@example.com' },
-    });
-    fireEvent.change(screen.getByPlaceholderText('Enter your password'), {
-      target: { name: 'password', value: 'pass' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    fillAndSubmit('test@example.com', 'pass');
 
+    // FIX: loading text is "Signing in…" (with Unicode ellipsis), use regex
     expect(screen.getByText(/signing in/i)).toBeInTheDocument();
+
     resolve({ data: { token: 't', userId: '1', role: 'PATIENT', fullName: 'A' } });
   });
 
@@ -184,17 +196,16 @@ describe('Login Component', () => {
     });
 
     renderLogin();
-    fireEvent.change(screen.getByPlaceholderText('Enter your email'), {
-      target: { name: 'email', value: 'p@example.com' },
-    });
-    fireEvent.change(screen.getByPlaceholderText('Enter your password'), {
-      target: { name: 'password', value: 'pass' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    fillAndSubmit('p@example.com', 'pass');
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/book/42');
       expect(sessionStorage.getItem('guestRedirectPath')).toBeNull();
     });
+  });
+
+  it('renders the Google login button', () => {
+    renderLogin();
+    expect(screen.getByRole('button', { name: /continue with google/i })).toBeInTheDocument();
   });
 });

@@ -5,11 +5,6 @@ import LoginPromptModal from './LoginPromptModal';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
-/**
- * GuestDashboard
- * Uses plain unauthenticated GET requests.
- * Backend already permits GET /providers without a token (isPublicPath in JwtAuthenticationFilter).
- */
 const GuestDashboard = () => {
   const navigate = useNavigate();
 
@@ -28,7 +23,6 @@ const GuestDashboard = () => {
     fetchProviders();
   }, []);
 
-  // No Authorization header — GET /providers is public in the backend
   const fetchProviders = async () => {
     try {
       setError(null);
@@ -193,7 +187,42 @@ const GuestDashboard = () => {
           <div className="provider-grid">
             {filteredProviders.map(provider => (
               <div key={provider.providerId} className="provider-card">
-                <div className="provider-avatar">{provider.fullName?.charAt(0) || 'D'}</div>
+
+                {/* ── Avatar banner: photo if available, else gradient + initial ── */}
+                <div className="provider-avatar" style={{ position: 'relative', overflow: 'hidden' }}>
+                  {provider.profilePhotoUrl ? (
+                    <img
+                      src={provider.profilePhotoUrl}
+                      alt={`Dr. ${provider.fullName}`}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        display: 'block',
+                      }}
+                      onError={e => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  {/* Fallback initial */}
+                  <span style={{
+                    display: provider.profilePhotoUrl ? 'none' : 'flex',
+                    width: '100%',
+                    height: '100%',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '3rem',
+                    fontWeight: 600,
+                    color: 'white',
+                    position: 'absolute',
+                    top: 0, left: 0,
+                  }}>
+                    {provider.fullName?.charAt(0) || 'D'}
+                  </span>
+                </div>
+
                 <div className="provider-info">
                   <h4 className="provider-name">{getProviderName(provider)}</h4>
                   <p className="provider-spec">{provider.specialization}</p>
@@ -209,7 +238,6 @@ const GuestDashboard = () => {
                     {provider.clinicAddress && <div>📍 {provider.clinicAddress.substring(0, 40)}...</div>}
                   </div>
 
-                  {/* Bio — always render the block so height is consistent */}
                   <p style={{ fontSize: '0.85rem', color: '#999', margin: '12px 0 0', lineHeight: '1.5', minHeight: '40px' }}>
                     {provider.bio
                       ? (provider.bio.length > 80 ? provider.bio.slice(0, 80) + '...' : provider.bio)

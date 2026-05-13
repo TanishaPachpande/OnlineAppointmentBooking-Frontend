@@ -1,7 +1,4 @@
 // REPLACE: src/components/PatientDashboard.jsx
-// Only change vs original: provider cards now have equal height with the
-// "Book Appointment" button always pinned to the bottom.
-// All data-fetching, search, filter, and navigation logic is UNCHANGED.
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -26,7 +23,6 @@ const PatientDashboard = () => {
         fetchData();
     }, []);
 
-    // ── unchanged ──
     const fetchData = async () => {
         try {
             const [providerData, appointmentData] = await Promise.all([
@@ -43,7 +39,6 @@ const PatientDashboard = () => {
         }
     };
 
-    // ── unchanged ──
     const handleSearch = async () => {
         if (!searchKeyword.trim()) { setFilteredProviders(providers); return; }
         try {
@@ -54,7 +49,6 @@ const PatientDashboard = () => {
         }
     };
 
-    // ── unchanged ──
     const handleSpecFilter = async (spec) => {
         setFilterSpec(spec);
         if (!spec) { setFilteredProviders(providers); return; }
@@ -98,7 +92,7 @@ const PatientDashboard = () => {
                 </div>
             )}
 
-            {/* Stats — unchanged */}
+            {/* Stats */}
             <div className="dashboard-stats">
                 <div className="stat-card">
                     <div className="stat-number">{upcomingAppointments.length}</div>
@@ -114,7 +108,7 @@ const PatientDashboard = () => {
                 </div>
             </div>
 
-            {/* Upcoming Appointments — unchanged */}
+            {/* Upcoming Appointments */}
             {upcomingAppointments.length > 0 && (
                 <div className="card" style={{ marginBottom: '32px' }}>
                     <h3 className="card-title">📅 Upcoming Appointments</h3>
@@ -148,7 +142,7 @@ const PatientDashboard = () => {
                 </div>
             )}
 
-            {/* Search & Filter — unchanged */}
+            {/* Search & Filter */}
             <div className="search-filter-container">
                 <h3 style={{ marginTop: 0, marginBottom: '20px', color: '#0066cc' }}>🔍 Find a Healthcare Provider</h3>
                 <div className="search-box">
@@ -176,7 +170,7 @@ const PatientDashboard = () => {
                 </div>
             </div>
 
-            {/* ── Doctors Grid ── */}
+            {/* Doctors Grid */}
             <div style={{ marginTop: '32px' }}>
                 <h2 style={{ marginBottom: '20px' }}>
                     {filteredProviders.length} Healthcare Provider{filteredProviders.length !== 1 ? 's' : ''} Available
@@ -189,29 +183,54 @@ const PatientDashboard = () => {
                         <p className="empty-text">Try adjusting your search or filter criteria</p>
                     </div>
                 ) : (
-                    /*
-                     * FIX: align-items: stretch (default) makes every card in a row
-                     * the same height. Each card uses flexDirection:'column' so the
-                     * info section grows to fill, pushing the button to the bottom.
-                     */
                     <div className="provider-grid">
                         {filteredProviders.map(provider => (
                             <div key={provider.providerId} className="provider-card"
                                 style={{ display: 'flex', flexDirection: 'column' }}>
 
-                                {/* Avatar banner */}
-                                <div className="provider-avatar">
-                                    {provider.fullName?.charAt(0) || 'D'}
+                                {/* ── Avatar banner: photo if available, else gradient + initial ── */}
+                                <div className="provider-avatar" style={{ position: 'relative', overflow: 'hidden' }}>
+                                    {provider.profilePhotoUrl ? (
+                                        <img
+                                            src={provider.profilePhotoUrl}
+                                            alt={`Dr. ${provider.fullName}`}
+                                            style={{
+                                                width: '100%',
+                                                height: '100%',
+                                                objectFit: 'cover',
+                                                display: 'block',
+                                            }}
+                                            onError={e => {
+                                                // If image fails to load, hide it and show initial
+                                                e.target.style.display = 'none';
+                                                e.target.nextSibling.style.display = 'flex';
+                                            }}
+                                        />
+                                    ) : null}
+                                    {/* Fallback initial — shown when no photo, or photo fails */}
+                                    <span style={{
+                                        display: provider.profilePhotoUrl ? 'none' : 'flex',
+                                        width: '100%',
+                                        height: '100%',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '3rem',
+                                        fontWeight: 600,
+                                        color: 'white',
+                                        position: 'absolute',
+                                        top: 0, left: 0,
+                                    }}>
+                                        {provider.fullName?.charAt(0) || 'D'}
+                                    </span>
                                 </div>
 
-                                {/* Info section grows to fill remaining space */}
+                                {/* Info section */}
                                 <div className="provider-info"
                                     style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
 
                                     <h4 className="provider-name">{getProviderName(provider)}</h4>
                                     <p className="provider-spec">{provider.specialization}</p>
 
-                                    {/* Always render badge area so height is consistent */}
                                     <div style={{ fontSize: '0.85rem', marginBottom: '12px', minHeight: '20px' }}>
                                         {provider.isVerified && (
                                             <span style={{ color: '#00c853', fontWeight: '600' }}>✓ Verified Provider</span>
@@ -225,7 +244,6 @@ const PatientDashboard = () => {
                                         <div>📍 {provider.clinicAddress?.substring(0, 40)}...</div>
                                     </div>
 
-                                    {/* Bio — clamp to 2 lines so it never blows up card height */}
                                     <p style={{
                                         fontSize: '0.85rem', color: '#999',
                                         margin: '12px 0 0', lineHeight: '1.5',
@@ -238,7 +256,6 @@ const PatientDashboard = () => {
                                         {provider.bio || ''}
                                     </p>
 
-                                    {/* Rating + button pushed to bottom */}
                                     <div style={{ marginTop: 'auto', paddingTop: '12px' }}>
                                         <div className="provider-rating" style={{ marginBottom: '12px' }}>
                                             <span className="stars">★★★★★</span>

@@ -98,6 +98,22 @@ describe('appointmentService', () => {
     expect(result).toHaveLength(1);
   });
 
+  it('getByProviderAndDate fetches appointments for provider on a specific date', async () => {
+    axios.get.mockResolvedValueOnce({ data: [{ appointmentId: 8 }] });
+
+    const result = await appointmentService.getByProviderAndDate('10', '2026-06-01');
+
+    expect(axios.get).toHaveBeenCalledWith(
+      'http://localhost:8080/appointments/provider/10/date/2026-06-01',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'Authorization': 'Bearer test_token',
+        })
+      })
+    );
+    expect(result).toHaveLength(1);
+  });
+
   it('cancelAppointment sends PUT to /appointments/:id/cancel', async () => {
     axios.put.mockResolvedValueOnce({ data: { status: 'CANCELLED' } });
 
@@ -167,6 +183,20 @@ describe('appointmentService', () => {
     );
   });
 
+  it('getAppointmentCount fetches count for provider', async () => {
+    axios.get.mockResolvedValueOnce({ data: 15 });
+
+    const result = await appointmentService.getAppointmentCount('10');
+
+    expect(axios.get).toHaveBeenCalledWith(
+      'http://localhost:8080/appointments/provider/10/count',
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'Authorization': 'Bearer test_token' })
+      })
+    );
+    expect(result).toBe(15);
+  });
+
   it('sends no Authorization header when token is missing', async () => {
     localStorage.removeItem('token');
     axios.get.mockResolvedValueOnce({ data: [] });
@@ -175,5 +205,15 @@ describe('appointmentService', () => {
 
     const callArgs = axios.get.mock.calls[0];
     expect(callArgs[1].headers['Authorization']).toBeUndefined();
+  });
+
+  it('bookAppointment propagates errors', async () => {
+    axios.post.mockRejectedValueOnce(new Error('Conflict'));
+    await expect(appointmentService.bookAppointment({})).rejects.toThrow('Conflict');
+  });
+
+  it('cancelAppointment propagates errors', async () => {
+    axios.put.mockRejectedValueOnce(new Error('Not Found'));
+    await expect(appointmentService.cancelAppointment(999)).rejects.toThrow('Not Found');
   });
 });

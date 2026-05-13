@@ -174,6 +174,45 @@ const styles = `
     font-weight: 600;
   }
 
+  /* ── Hide-past toggle ── */
+  .pa-toggle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    white-space: nowrap;
+  }
+  .pa-toggle-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    user-select: none;
+  }
+  .pa-toggle-track {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    background: #cbd5e1;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .pa-toggle-track.on { background: #1e40af; }
+  .pa-toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .pa-toggle-track.on .pa-toggle-thumb { transform: translateX(16px); }
+
   /* Filter Tabs */
   .pa-filters {
     max-width: 1100px;
@@ -345,6 +384,8 @@ const ProviderAppointments = () => {
   const [message,          setMessage]          = useState(null);
   const [activeFilter,     setActiveFilter]     = useState('ALL');
   const [selectedDate,     setSelectedDate]     = useState('');
+  // ── NEW: hide past appointments toggle (default ON so past is hidden) ──
+  const [hidePast,         setHidePast]         = useState(true);
 
   useEffect(() => {
     if (!user || user.role !== 'PROVIDER') { navigate('/login'); return; }
@@ -363,7 +404,6 @@ const ProviderAppointments = () => {
       const pData = await providerService.getProviderByUserId(user.userId);
       setProviderData(pData);
 
-      // If provider is not yet approved, don't try to load appointments
       if (pData.verificationStatus !== 'APPROVED') {
         setLoading(false);
         return;
@@ -374,7 +414,6 @@ const ProviderAppointments = () => {
       setAppointments(apts);
       setSelectedDate('');
     } catch (err) {
-      // 404 = profile doesn't exist yet — show friendly message, not error banner
       if (err?.response?.status === 404 || !err?.response) {
         setProviderData(null);
       } else {
@@ -423,8 +462,20 @@ const ProviderAppointments = () => {
   };
 
   const filters  = ['ALL', 'SCHEDULED', 'COMPLETED', 'CANCELLED', 'NO_SHOW'];
-  const filtered = activeFilter === 'ALL' ? appointments : appointments.filter(a => a.status === activeFilter);
 
+  // ── NEW: today string for past-date comparison ──
+  const today = new Date().toISOString().split('T')[0];
+
+  // ── NEW: apply hidePast filter on top of status filter ──
+  const visibleAppointments = hidePast
+    ? appointments.filter(a => a.appointmentDate >= today)
+    : appointments;
+
+  const filtered = activeFilter === 'ALL'
+    ? visibleAppointments
+    : visibleAppointments.filter(a => a.status === activeFilter);
+
+  // Stats always reflect ALL appointments (all-time totals), unaffected by toggle
   const totalCount = allAppointments.length;
   const scheduled  = allAppointments.filter(a => a.status === 'SCHEDULED').length;
   const completed  = allAppointments.filter(a => a.status === 'COMPLETED').length;
@@ -438,7 +489,6 @@ const ProviderAppointments = () => {
     </>
   );
 
-  // Profile doesn't exist yet or not approved → friendly prompt
   if (!providerData || providerData.verificationStatus !== 'APPROVED') {
     const isPending  = providerData?.verificationStatus === 'PENDING';
     const isRejected = providerData?.verificationStatus === 'REJECTED';
@@ -504,7 +554,7 @@ const ProviderAppointments = () => {
           </div>
         )}
 
-        {/* Stats */}
+        {/* Stats — always all-time totals */}
         <div className="pa-stats">
           {[
             { label: 'Total',     value: totalCount, cls: 'pa-stat-total'     },
@@ -520,7 +570,7 @@ const ProviderAppointments = () => {
           ))}
         </div>
 
-        {/* Date Filter */}
+        {/* Date Filter + Hide Past toggle */}
         <div className="pa-controls">
           <span className="pa-date-label">Filter by date</span>
           <input type="date" className="pa-date-input" value={selectedDate}
@@ -532,12 +582,22 @@ const ProviderAppointments = () => {
           {selectedDate && (
             <span className="pa-date-note">⚠ Showing {selectedDate} only — stats show all-time totals</span>
           )}
+
+          {/* ── NEW: Hide past toggle ── */}
+          <div className="pa-toggle-wrap" onClick={() => setHidePast(p => !p)} style={{ cursor: 'pointer' }}>
+            <span className="pa-toggle-label">Hide past</span>
+            <div className={`pa-toggle-track ${hidePast ? 'on' : ''}`}>
+              <div className="pa-toggle-thumb" />
+            </div>
+          </div>
         </div>
 
         {/* Filter Tabs */}
         <div className="pa-filters">
           {filters.map(f => {
-            const count = f === 'ALL' ? appointments.length : appointments.filter(a => a.status === f).length;
+            const count = f === 'ALL'
+              ? visibleAppointments.length
+              : visibleAppointments.filter(a => a.status === f).length;
             const isActive = activeFilter === f;
             const activeClass = isActive ? `active-${f === 'ALL' ? 'all' : f}` : '';
             return (
@@ -553,7 +613,11 @@ const ProviderAppointments = () => {
           <div className="pa-empty">
             <div className="pa-empty-icon">📋</div>
             <h3>No appointments found</h3>
-            <p>Try adjusting your filters or check back later.</p>
+            <p>
+              {hidePast
+                ? 'No upcoming appointments. Toggle "Hide past" off to see historical records.'
+                : 'Try adjusting your filters or check back later.'}
+            </p>
           </div>
         ) : (
           <div className="pa-list">

@@ -18,15 +18,22 @@ vi.mock('react-router-dom', async () => {
 
 const mockUser = { token: 'tok', role: 'PROVIDER', userId: '2', fullName: 'Dr. Alice' };
 
-const mockProviderData = { providerId: 10, fullName: 'Alice Smith', specialization: 'Cardiology' };
+// Must have verificationStatus: 'APPROVED' so component shows main appointments view
+const mockProviderData = {
+  providerId: 10,
+  fullName: 'Alice Smith',
+  specialization: 'Cardiology',
+  verificationStatus: 'APPROVED',
+};
 
+// Use far-future dates so the default hidePast=true toggle doesn't hide them
 const mockAppointments = [
   {
     appointmentId: 201,
     patientId: 'p1',
     providerId: 10,
     status: 'SCHEDULED',
-    appointmentDate: '2026-06-01',
+    appointmentDate: '2099-06-01',
     startTime: '10:00:00',
     endTime: '10:30:00',
     serviceType: 'Consultation',
@@ -37,7 +44,7 @@ const mockAppointments = [
     patientId: 'p2',
     providerId: 10,
     status: 'COMPLETED',
-    appointmentDate: '2026-05-01',
+    appointmentDate: '2099-05-01',
     startTime: '11:00:00',
     endTime: '11:30:00',
     serviceType: 'Follow-up',
@@ -126,7 +133,12 @@ describe('ProviderAppointments Component', () => {
   });
 
   it('shows error message when appointments fetch fails', async () => {
-    appointmentService.getByProvider.mockRejectedValue(new Error('Server error'));
+    // FIX: Must use an error WITH a response object that is NOT 404
+    // The catch block: if (err?.response?.status === 404 || !err?.response) → sets providerData null
+    // Only shows error toast when err.response exists and status !== 404
+    appointmentService.getByProvider.mockRejectedValue({
+      response: { status: 500, data: { message: 'Internal server error' } },
+    });
     renderComponent();
     await waitFor(() => {
       expect(screen.getByText(/failed to load/i)).toBeInTheDocument();
@@ -138,5 +150,41 @@ describe('ProviderAppointments Component', () => {
     await waitFor(() => screen.getByText('Patient Appointments'), { timeout: 3000 });
     fireEvent.click(screen.getByText('← Dashboard'));
     expect(mockNavigate).toHaveBeenCalledWith('/manage-slots');
+  });
+
+  it('shows pending approval state when provider status is PENDING', async () => {
+    providerService.getProviderByUserId = vi.fn().mockResolvedValue({
+      providerId: 10,
+      verificationStatus: 'PENDING',
+    });
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Account Pending Approval')).toBeInTheDocument();
+    });
+  });
+
+  it('shows rejected state when provider status is REJECTED', async () => {
+    providerService.getProviderByUserId = vi.fn().mockResolvedValue({
+      providerId: 10,
+      verificationStatus: 'REJECTED',
+    });
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Account Not Approved')).toBeInTheDocument();
+    });
+  });
+
+  it('shows complete profile prompt when providerData is null (404)', async () => {
+    providerService.getProviderByUserId = vi.fn().mockRejectedValue({ response: { status: 404 } });
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Complete Your Profile First')).toBeInTheDocument();
+    });
+  });
+
+  it('redirects PATIENT role to /login', () => {
+    authService.getCurrentUser.mockReturnValue({ token: 'tok', role: 'PATIENT', userId: '1' });
+    renderComponent();
+    expect(mockNavigate).toHaveBeenCalledWith('/login');
   });
 });

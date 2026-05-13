@@ -1,9 +1,7 @@
-// NEW FILE: src/components/Sidebar.jsx
-// Create this file in your components folder.
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import authService from '../services/authService';
+import providerService from '../services/api';
 
 const Sidebar = () => {
   const navigate = useNavigate();
@@ -11,6 +9,20 @@ const Sidebar = () => {
   const user = authService.getCurrentUser();
   const [collapsed, setCollapsed] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+
+  // ── NEW: fetch provider profile photo for PROVIDER users ──
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState(null);
+
+  useEffect(() => {
+    if (user?.role === 'PROVIDER' && user?.userId) {
+      providerService.getProviderByUserId(user.userId)
+        .then(data => {
+          if (data?.profilePhotoUrl) setProfilePhotoUrl(data.profilePhotoUrl);
+        })
+        .catch(() => {}); // silently ignore — photo just won't show
+    }
+  }, []);
+  // ─────────────────────────────────────────────────────────────
 
   const handleLogout = () => {
     authService.logout();
@@ -47,7 +59,6 @@ const Sidebar = () => {
 
   const isActive = (path) => location.pathname === path;
 
-  /* ─── styles ─── */
   const sidebarStyle = {
     width: collapsed ? '68px' : '240px',
     minWidth: collapsed ? '68px' : '240px',
@@ -129,15 +140,27 @@ const Sidebar = () => {
               cursor: 'pointer',
             }}
           >
-            {/* Avatar */}
+            {/* ── Avatar: photo if available, else gradient + initials ── */}
             <div style={{
               width: '38px', height: '38px', borderRadius: '50%',
-              background: 'linear-gradient(135deg,#0a84ff,#34aadc)',
+              background: profilePhotoUrl ? 'transparent' : 'linear-gradient(135deg,#0a84ff,#34aadc)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: 'white', fontWeight: 700, fontSize: '0.9rem',
               border: '2px solid rgba(255,255,255,0.2)',
               flexShrink: 0,
-            }}>{initials}</div>
+              overflow: 'hidden',
+            }}>
+              {profilePhotoUrl ? (
+                <img
+                  src={profilePhotoUrl}
+                  alt={user?.fullName}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  onError={e => { e.target.style.display = 'none'; }}
+                />
+              ) : (
+                initials
+              )}
+            </div>
 
             {!collapsed && <>
               <div style={{ overflow: 'hidden', flex: 1 }}>

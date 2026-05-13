@@ -12,6 +12,25 @@ export default defineConfig({
       jsdom: {
         resources: 'usable'
       }
-    }
+    },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'lcov'],
+      reportsDirectory: './coverage',
+      // Include only your own source files, not node_modules
+      include: ['src/**/*.{js,jsx}'],
+      exclude: [
+        'src/test/**',
+        'src/main.jsx',
+        'src/index.css',
+        'node_modules/**',
+      ],
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 80,
+        statements: 80,
+      },
+    },
   },
 })
