@@ -1,0 +1,73 @@
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: mysql@123
+      MYSQL_DATABASE: provider_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - medibook-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pmysql@123"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  eureka-server:
+    image: 360964565535.dkr.ecr.ap-south-1.amazonaws.com/medibook/eureka-server:latest
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - medibook-network
+    restart: on-failure
+
+  provider-service:
+    image: 360964565535.dkr.ecr.ap-south-1.amazonaws.com/medibook/provider-service:latest
+    container_name: provider-service
+    ports:
+      - "8083:8083"
+    networks:
+      - medibook-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    restart: on-failure
+
+  record-service:
+    image: 360964565535.dkr.ecr.ap-south-1.amazonaws.com/medibook/record-service:latest
+    container_name: record-service
+    ports:
+      - "8089:8089"
+    networks:
+      - medibook-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    restart: on-failure
+
+  frontend:
+    image: 360964565535.dkr.ecr.ap-south-1.amazonaws.com/medibook/frontend:latest
+    container_name: frontend
+    ports:
+      - "80:80"
+    networks:
+      - medibook-network
+    restart: on-failure
+
+networks:
+  medibook-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
